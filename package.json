@@ -1,0 +1,7 @@
+{
+  "name": "basic-pub-sub",
+  "version": "1.0.0",
+  "devDependencies": {
+    "bun-types": "^1.1.42"
+  }
+}
