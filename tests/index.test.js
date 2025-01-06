@@ -9,15 +9,14 @@ describe("PubSub", () => {
     });
 
     it("should allow subscribing to topics", () => {
-        const unsubscribe = pubsub.subscribe("test-topic", () => {});
-        expect(pubsub.getSubscriberCount("test-topic")).toBe(1);
-        expect(typeof unsubscribe).toBe("function");
-    });
+        let called = false;
+        const unsubscribe = pubsub.subscribe("test-topic", () => {
+            called = true;
+        });
 
-    it("should allow multiple subscribers to the same topic", () => {
-        pubsub.subscribe("test-topic", () => {});
-        pubsub.subscribe("test-topic", () => {});
-        expect(pubsub.getSubscriberCount("test-topic")).toBe(2);
+        pubsub.publish("test-topic", {});
+        expect(called).toBe(true);
+        expect(typeof unsubscribe).toBe("function");
     });
 
     it("should call all subscribers when publishing", () => {
@@ -42,18 +41,26 @@ describe("PubSub", () => {
     });
 
     it("should handle unsubscribing correctly", () => {
-        const unsubscribe = pubsub.subscribe("test-topic", () => {});
-        expect(pubsub.getSubscriberCount("test-topic")).toBe(1);
+        let called = false;
+        const unsubscribe = pubsub.subscribe("test-topic", () => {
+            called = true;
+        });
 
         unsubscribe();
-        expect(pubsub.getSubscriberCount("test-topic")).toBe(0);
+        pubsub.publish("test-topic", {});
+        expect(called).toBe(false);
     });
 
     it("should handle multiple unsubscribes without errors", () => {
-        const unsubscribe = pubsub.subscribe("test-topic", () => {});
+        let called = false;
+        const unsubscribe = pubsub.subscribe("test-topic", () => {
+            called = true;
+        });
+
         unsubscribe();
         unsubscribe(); // Should not throw
-        expect(pubsub.getSubscriberCount("test-topic")).toBe(0);
+        pubsub.publish("test-topic", {});
+        expect(called).toBe(false);
     });
 
     it("should not affect other subscribers when unsubscribing", () => {
@@ -65,20 +72,22 @@ describe("PubSub", () => {
 
         unsubscribe1();
         pubsub.publish("test-topic", {});
-
         expect(called).toBe(true);
-        expect(pubsub.getSubscriberCount("test-topic")).toBe(1);
     });
 
     it("should clear all subscriptions", () => {
-        pubsub.subscribe("topic1", () => {});
-        pubsub.subscribe("topic2", () => {});
-        pubsub.subscribe("topic2", () => {});
+        let called1 = false;
+        let called2 = false;
+
+        pubsub.subscribe("topic1", () => { called1 = true; });
+        pubsub.subscribe("topic2", () => { called2 = true; });
 
         pubsub.clear();
+        pubsub.publish("topic1", {});
+        pubsub.publish("topic2", {});
 
-        expect(pubsub.getSubscriberCount("topic1")).toBe(0);
-        expect(pubsub.getSubscriberCount("topic2")).toBe(0);
+        expect(called1).toBe(false);
+        expect(called2).toBe(false);
     });
 
     it("should handle publishing to topics with no subscribers", () => {
@@ -99,24 +108,6 @@ describe("PubSub", () => {
         });
 
         pubsub.publish("test-topic", {});
-
         expect(called).toBe(true);
-    });
-
-    it("should maintain correct subscriber count after multiple operations", () => {
-        const unsubscribe1 = pubsub.subscribe("topic", () => {});
-        const unsubscribe2 = pubsub.subscribe("topic", () => {});
-
-        expect(pubsub.getSubscriberCount("topic")).toBe(2);
-
-        unsubscribe1();
-        expect(pubsub.getSubscriberCount("topic")).toBe(1);
-
-        const unsubscribe3 = pubsub.subscribe("topic", () => {});
-        expect(pubsub.getSubscriberCount("topic")).toBe(2);
-
-        unsubscribe2();
-        unsubscribe3();
-        expect(pubsub.getSubscriberCount("topic")).toBe(0);
     });
 });
